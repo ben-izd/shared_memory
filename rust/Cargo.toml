@@ -1,0 +1,11 @@
+[package]
+name = "shared_memory"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wolfram-library-link = "0.2.5"
+shared_memory = "0.12.4"
