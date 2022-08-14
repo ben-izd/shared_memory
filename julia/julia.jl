@@ -1,6 +1,5 @@
 # CAN BE CHANGED BY USER
 LIBRARY_PATH = joinpath(@__DIR__,"..","shared_memory.dll")
-SHARED_MEMORY_FILE_PATH = joinpath(@__DIR__,"..","data")
 # END
 
 function set_shared_memory_path(path::String)
@@ -69,4 +68,3 @@ function delete_shared_memory()
     end
 end
 
-set_shared_memory_path(SHARED_MEMORY_FILE_PATH)
