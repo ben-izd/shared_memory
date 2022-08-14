@@ -16,7 +16,7 @@ To make your life and mine easier, all the function names are the same (snake_ca
 Now use `set_shared_memory_path` function to set your shared_memory_file, a file use by other program to access the data you'll share or receive.
 
 ### Mathematica
-Before loading the package, first you have to set `SharedMemory\`libraryPath` to the library_path (in windows is `.dll` file). Then, use [`Get`](https://reference.wolfram.com/language/ref/Get.html) or other functions to load the package.
+Before loading the package, first you have to set ```SharedMemory`libraryPath``` to the library_path (in windows is `.dll` file). Then, use [`Get`](https://reference.wolfram.com/language/ref/Get.html) or other functions to load the package.
 
 ### Julia
 Open [`julia.jl` file](https://github.com/ben-izd/shared_memory/blob/a6dfdc00f4008959facd3b25b5e4320ada532214/julia/julia.jl#L2) and set `LIBRARY_PATH` to the shared library (in windows is `.dll` file).
