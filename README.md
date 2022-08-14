@@ -32,7 +32,7 @@ Open [`python.py` file](https://github.com/ben-izd/shared_memory/blob/3ba51ce3fa
 As of now, library supports:
 - Only rectangular double-type arrays
 - Setting a different dimension, should match the previous rank (if you want reshape the data and send it manuanly)
-- Data stored in shared memory is column-major like Julia and Matlab but Mathematica and python (by default) are row major, sending and recieving data from Mathematica and python include the neccesary transformation.
+- Data stored in shared memory is column-major like Julia and Matlab but Mathematica and python (by default) are row major, sending and recieving data from Mathematica and python will apply the neccesary transformations. if you don't want there is a workaround.
 
 ### Advance features
 
