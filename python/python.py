@@ -4,7 +4,6 @@ import os
 
 # CAN BE CHANGED BY USER
 LIBRARY_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","shared_memory.dll")
-SHARED_MEMORY_FILE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","data")
 # END
 
 lib = np.ctypeslib.load_library("shared_memory.dll",LIBRARY_PATH)
@@ -116,5 +115,3 @@ def set_shared_memory_data(data:np.ndarray)->int:
     if error_code < 0:
         print(f"[ERROR] in retrieving the flatten length. Code : {error_code}")
     return error_code
-
-set_shared_memory_path(SHARED_MEMORY_FILE_PATH)
