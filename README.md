@@ -1,4 +1,4 @@
-# Shared Memory - 🚧 Under construction
+# Shared Memory
 
 
 ![poster](https://user-images.githubusercontent.com/56647066/184504837-42af271b-85a1-48a3-b30e-3f725012c919.jpg)
@@ -98,7 +98,7 @@ Open [`python.py` file](https://github.com/ben-izd/shared_memory/blob/3ba51ce3fa
 
 
 ## How to use it
-
+🚧 Under construction
 
 ### Limitations
 As of now, library supports:
@@ -107,6 +107,7 @@ As of now, library supports:
 - Data stored in shared memory is column-major like Julia and Matlab but Mathematica and python (by default) are row major, sending and recieving data from Mathematica and python will apply the neccesary transformations. if you don't want there is a workaround.
 
 ### Advance features
+🚧 Under construction
 
 ## Notes for non-Windows users
 The project was built on windows and the `dll` files is included in the repository, but if you're on other operating systems, you have to build the rust project on your platform which thanks to Rust cargo, is suprisingly easy.
