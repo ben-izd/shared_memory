@@ -7,6 +7,74 @@ Easily and efficiently share rectangular double-typed data (any dimension) betwe
 
 To make your life and mine easier, all the function names are the same (snake_case) except Mathematica which does not support underline and is CamelCase. All of the them have simple logic `action_shared_memory[_property]`, like `get_shared_memory_flatten_length` in Julia,Python and Matlab which is `GetSharedMemoryFlattenLength` in Mathematica and all have the same functionality.
 
+## Simple Example
+Let's support you have a matrix in julia and you like to apply [`Numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) function on it then use Matlab [`mpower`](https://uk.mathworks.com/help/matlab/ref/mpower.html), then in Mathematica use [`Minors`](https://reference.wolfram.com/language/ref/Minors.html) to get the trace of that matrix, how would you do it? Saving in a file? use socket? Here is the steps with this library.
+
+1. Julia
+```Julia
+# setup
+include(raw"C:\julia\julia.jl")
+
+# shared memory file
+set_shared_memory_path(raw"C:\example\data")
+
+# our sample matrix
+data = [1 2 3 ; 4 5 6 ; 7 8 9];
+
+# share
+set_shared_memory_data(data) 
+```
+
+2. Python
+```python
+import numpy
+import sys
+
+# setup
+sys.path.append(r'C:\python')
+from shared_memory import *
+set_shared_memory_path(r'C:\example\data')
+
+# receive
+data = get_shared_memory_data()
+
+# manipulate
+new_data = numpy.sin(data);
+
+# share
+set_shared_memory_data(new_data)
+```
+3. Matlab
+```matlab
+% setup
+addpath("C:\\matlab");
+set_shared_memory_path("C:\\example\\data")
+
+% receive
+data=get_shared_memory_data();
+
+% manipulate
+new_data=mpower(data,2);
+
+% share
+set_shared_memory_data(new_data)
+```
+4. Mathematica (Wolfram Language)
+```wolfram
+(* setup *)
+SharedMemory`libraryPath ="C:\\shared_memory.dll";
+Get["C:\\mathematica\\shared_memory.wl"];
+SetSharedMemoryPath["C:\\example\\data"];
+
+(* receive *)
+data = GetSharedMemoryData[];
+
+(* manipulate *)
+newData = Minors[data];
+
+(* share *)
+SetSharedMemoryData[newData];
+```
 ## Initializations
 
 
@@ -22,6 +90,7 @@ Before loading the package, first you have to set ```SharedMemory`libraryPath```
 Open [`julia.jl` file](https://github.com/ben-izd/shared_memory/blob/a6dfdc00f4008959facd3b25b5e4320ada532214/julia/julia.jl#L2) and set `LIBRARY_PATH` to the shared library (in windows is `.dll` file).
 
 ### Python
+You need [`Numpy`](https://pypi.org/project/numpy/) installed  first.
 Open [`python.py` file](https://github.com/ben-izd/shared_memory/blob/3ba51ce3fa9eae2c57cacb268b686616d222fd7d/python/python.py#L6) and set `LIBRARY_PATH` to the shared library (in windows is `.dll` file).
 
 
