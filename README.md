@@ -13,7 +13,7 @@ Let's support you have a matrix in julia and you like to apply [`Numpy.sin`](htt
 1. Julia
 ```Julia
 # setup
-include(raw"C:\julia\julia.jl")
+include(raw"C:\julia\shared_memory.jl")
 
 # shared memory file
 set_shared_memory_path(raw"C:\example\data")
