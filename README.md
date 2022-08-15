@@ -82,7 +82,7 @@ SetSharedMemoryData[newData];
 
 
 ### Matlab
-[`matlab`](https://github.com/ben-izd/shared_memory/tree/main/matlab) folder contain all functions as seperate files, just include the path with [`addpath`](https://uk.mathworks.com/help/matlab/ref/addpath.html) or other solutions to be able to use the functions. Before using any function, you have to first set the [`LIBRARY_PATH_DIRECTORY` in `load_library.m` file](https://github.com/ben-izd/shared_memory/blob/9b97dab3bbc81c122d4c966cee5ce1bf7733cf90/matlab/load_library.m#L3), so it load the library (in windows is `.dll` file).
+[`matlab`](https://github.com/ben-izd/shared_memory/tree/main/matlab) folder contain all functions as seperate files, just include the that folder and the root (folder contains `.dll`) to path with [`addpath`](https://uk.mathworks.com/help/matlab/ref/addpath.html) or other solutions to be able to use the functions..
 
 Now use `set_shared_memory_path` function to set your shared_memory_file, a file use by other program to access the data you'll share or receive.
 
