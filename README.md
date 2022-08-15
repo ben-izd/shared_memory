@@ -18,7 +18,7 @@ First we assume, you've downloaded the repository in your `C:\download` director
 include(raw"C:\download\julia\shared_memory.jl")
 
 # shared memory file
-set_shared_memory_path(raw"C:\download\example\data")
+set_shared_memory_path(raw"C:\download\data")
 
 # our sample matrix
 data = [1 2 3 ; 4 5 6 ; 7 8 9];
@@ -35,7 +35,7 @@ import sys
 # setup
 sys.path.append(r'C:\download\python')
 from shared_memory import *
-set_shared_memory_path(r'C:\download\example\data')
+set_shared_memory_path(r'C:\download\data')
 
 # receive
 data = get_shared_memory_data()
@@ -51,7 +51,7 @@ set_shared_memory_data(new_data)
 % setup
 addpath("C:\\download\\matlab");
 addpath("C:\\download\\");
-set_shared_memory_path("C:\\download\\example\\data")
+set_shared_memory_path("C:\\download\\data")
 
 % receive
 data=get_shared_memory_data();
@@ -67,7 +67,7 @@ set_shared_memory_data(new_data)
 (* setup *)
 SharedMemory`libraryPath ="C:\\download\\shared_memory.dll";
 Get["C:\\download\\mathematica\\shared_memory.wl"];
-SetSharedMemoryPath["C:\\download\\example\\data"];
+SetSharedMemoryPath["C:\\download\\data"];
 
 (* receive *)
 data = GetSharedMemoryData[];
