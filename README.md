@@ -8,7 +8,7 @@ Easily and efficiently share rectangular double-typed data (any dimension) betwe
 To make your life and mine easier, all the function names are the same (snake_case) except Mathematica which does not support underline and is CamelCase. All of the them have simple logic `action_shared_memory[_property]`, like `get_shared_memory_flatten_length` in Julia,Python and Matlab which is `GetSharedMemoryFlattenLength` in Mathematica and all have the same functionality.
 
 ## Simple Example
-Let's support you have a matrix in julia and you like to apply [`Numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) function on it then use Matlab [`mpower`](https://uk.mathworks.com/help/matlab/ref/mpower.html), then in Mathematica use [`Minors`](https://reference.wolfram.com/language/ref/Minors.html), how would you do it? Saving in a file? use socket? Here is the steps with this library.
+Let's suppose you have a matrix in julia and you would like to apply [`Numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) function on it then use Matlab [`mpower`](https://uk.mathworks.com/help/matlab/ref/mpower.html), then in Mathematica use [`Minors`](https://reference.wolfram.com/language/ref/Minors.html), how would you do it? Saving in a file? use socket? Here is the steps with this library.
 
 First we assume, you've downloaded the repository in your `C:\download` directory.
 
