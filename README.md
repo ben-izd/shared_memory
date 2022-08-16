@@ -50,7 +50,7 @@ set_shared_memory_data(new_data)
 ```matlab
 % setup
 addpath("C:\\download\\matlab");
-addpath("C:\\download\\");
+addpath("C:\\download");
 set_shared_memory_path("C:\\download\\data")
 
 % receive
