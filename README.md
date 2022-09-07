@@ -1,7 +1,6 @@
 # Shared Memory
 
-![poster2](https://user-images.githubusercontent.com/56647066/188800753-0e5759de-0183-4ec9-8cec-95811e3dbe83.jpg)
-
+![poster2](https://user-images.githubusercontent.com/56647066/188800877-61aa5b15-058f-48dc-aefc-427a20898a0c.jpg)
 
 
 Easily and efficiently share rectangular double-typed data (any dimension) between [Python](https://python.org) - [Julia](https://julialang.org) - [Matlab](https://mathworks.com) - [Wolfram Language (Mathematica)](https://www.wolfram.com/mathematica/) using shared memory. Each language somehow implements sharing data either for its subkernel or same processes but now you can share between them at a fast speed. It's backed by a library written in [Rust](https://rust-lang.org/).
