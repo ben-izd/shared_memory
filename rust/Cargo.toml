@@ -9,3 +9,4 @@ crate-type = ["cdylib"]
 [dependencies]
 wolfram-library-link = "0.2.5"
 shared_memory = "0.12.4"
+retry = "1.3.1"
