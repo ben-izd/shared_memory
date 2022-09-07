@@ -53,7 +53,7 @@ end
 
 function get_shared_memory_data_type()
     temp = check_library_error(ccall((:get_shared_memory_data_type,LIBRARY_PATH), Cint, ()));
-    return [UInt8,UInt16,UInt32,UInt64,Int8,Int16,Int32,Int64,Float32,Float64,ComplexF32,ComplexF64][temp+1]
+    return [UInt8,UInt16,UInt32,UInt64,Int8,Int16,Int32,Int64,Float32,Float64,ComplexF32,ComplexF64,String][temp+1]
 end
 
 function get_shared_memory_rank()
@@ -68,7 +68,7 @@ function get_shared_memory_dimensions()::Vector{UInt64}
     return dims
 end
 
-function get_shared_memory_flatten_data()::Vector
+function get_shared_memory_flatten_data()::Union{String,Vector}
     shared_memory_type = get_shared_memory_data_type();
     shared_memory_flatten_length = get_shared_memory_flatten_length();
     if shared_memory_type == UInt8
@@ -107,17 +107,31 @@ function get_shared_memory_flatten_data()::Vector
     elseif  shared_memory_type == ComplexF64
         data = Vector{ComplexF64}(undef,shared_memory_flatten_length)
         check_library_error(ccall((:get_shared_memory_flatten_data_float64, LIBRARY_PATH), Cint, (Ptr{Float64},), data))
+    elseif shared_memory_type == String
+        data = repeat(" ", shared_memory_flatten_length)
+        check_library_error(ccall((:get_shared_memory_string, LIBRARY_PATH), Cint, (Cstring,), data))
     end
 
     return data
 end
 
-function get_shared_memory_data()::Array
+function get_shared_memory_data()::Union{String,Array}
+    type= get_shared_memory_data_type()
     data = get_shared_memory_flatten_data()
+    if type == String
+        return data
+    end
+    
     size=get_shared_memory_dimensions()
     temp = reshape(data,Tuple(size))
     return temp
 end
+
+function set_shared_memory_data(data::String)
+    check_library_error(ccall((:set_shared_memory_string,LIBRARY_PATH), Cint, (Cstring,),data))
+end
+
+
 
 function set_shared_memory_data(data::Array)
     temp_dims = convert(Vector{UInt64},collect(size(data)))
@@ -165,5 +179,5 @@ end
 function delete_shared_memory()
     check_library_error(ccall((:delete_shared_memory, LIBRARY_PATH), Cint, ()))
 end
-        
+
 end

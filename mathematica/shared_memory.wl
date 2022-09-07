@@ -26,9 +26,10 @@ SharedMemory`Internal`CheckLibraryError[value_Integer]:=Switch[value
 SharedMemory`Internal`CheckLibraryError[x_]:=x;
 
 If[FileExistsQ[SharedMemory`libraryPath],
+SharedMemory`Compiled`FreeString=LibraryFunctionLoad[libraryPath,"internal_free_string_mathematica",{},"Void"];
 SharedMemory`Compiled`GetSharedMemoryFlattenDataReal=LibraryFunctionLoad[libraryPath,"get_shared_memory_flatten_data_float64_mathematica",{},{Real,1}];
 SharedMemory`Compiled`GetSharedMemoryFlattenDataSignedInteger64=LibraryFunctionLoad[libraryPath,"get_shared_memory_flatten_data_signed_64_mathematica",{},{Integer,1}];
-SharedMemory`Compiled`GetSharedMemoryFlattenDataNumericArray=LibraryFunctionLoad[libraryPath,"get_shared_memory_data_numeric_array_mathematica",{},LibraryDataType[NumericArray]];
+SharedMemory`Compiled`GetSharedMemoryFlattenDataNumericArray=LibraryFunctionLoad[libraryPath,"get_shared_memory_flatten_data_numeric_array_mathematica",{},LibraryDataType[NumericArray]];
 
 SharedMemory`Compiled`SetSharedMemoryDataReal=LibraryFunctionLoad[libraryPath,"set_shared_memory_data_float64_mathematica",{{Real,_,"Constant"}},"Void"];
 SharedMemory`Compiled`SetSharedMemoryDataSignedInteger64=LibraryFunctionLoad[libraryPath,"set_shared_memory_data_signed_64_mathematica",{{Integer,_,"Constant"}},"Void"];
@@ -46,6 +47,8 @@ SharedMemory`Compiled`GetSharedMemoryDimensions=LibraryFunctionLoad[libraryPath,
 SharedMemory`Compiled`SetSharedMemoryDimensions=LibraryFunctionLoad[libraryPath,"set_shared_memory_dimensions_mathematica",{{Integer,1,"Constant"}},"Void"];
 
 SharedMemory`Compiled`SetSharedMemoryPath=LibraryFunctionLoad[libraryPath,"set_shared_memory_path_mathematica",{"UTF8String"},"Void"];
+SharedMemory`Compiled`GetSharedMemoryString=LibraryFunctionLoad[libraryPath,"get_shared_memory_string_mathematica",{},"UTF8String"];
+SharedMemory`Compiled`SetSharedMemoryString=LibraryFunctionLoad[libraryPath,"set_shared_memory_string_mathematica",{"UTF8String"},"Void"];
 
 ClearAll[SharedMemory`Internal`RowMajorToColumnMajor,SharedMemory`Internal`ColumnMajorToRowMajor,CustomQuiet];
 
@@ -72,26 +75,39 @@ Transpose[ArrayReshape[data,reversedDimensions2],reversedDimensions1]
 ]];
 
 (* interface *)
-SetSharedMemoryData[data_NumericArray]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryDataNumericArray[SharedMemory`Internal`RowMajorToColumnMajor[data]];
+
+SetSharedMemoryData[data:_NumericArray|_ByteArray]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryDataNumericArray[SharedMemory`Internal`RowMajorToColumnMajor[data]];
 SetSharedMemoryData[data_/;ArrayQ[data,_,Developer`RealQ]]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryDataReal[SharedMemory`Internal`RowMajorToColumnMajor[data]];
 SetSharedMemoryData[data_/;ArrayQ[data,_,IntegerQ]]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryDataSignedInteger64[SharedMemory`Internal`RowMajorToColumnMajor[data]];
+SetSharedMemoryData[data_String]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryString[data];
 
-GetSharedMemoryData[]:=Catch@SharedMemory`Internal`ColumnMajorToRowMajor@ArrayReshape[CustomQuiet@GetSharedMemoryFlattenData[],CustomQuiet@SharedMemory`Compiled`GetSharedMemoryDimensions[]];
+GetSharedMemoryData[]:=Block[{data=GetSharedMemoryFlattenData[]},
+If[StringQ[data],data,
+Catch@SharedMemory`Internal`ColumnMajorToRowMajor@ArrayReshape[data,CustomQuiet@SharedMemory`Compiled`GetSharedMemoryDimensions[]]
+]];
 
-supportedTypes={"UnsignedInteger8","UnsignedInteger16","UnsignedInteger32","UnsignedInteger64","SignedInteger8","SignedInteger16","SignedInteger32","SignedInteger64","Real32","Real64","ComplexReal32","ComplexReal64"};
+supportedTypes={"UnsignedInteger8","UnsignedInteger16","UnsignedInteger32","UnsignedInteger64","SignedInteger8","SignedInteger16","SignedInteger32","SignedInteger64","Real32","Real64","ComplexReal32","ComplexReal64","String"};
 GetSharedMemoryDataType[]:=Catch[supportedTypes[[CustomQuiet[SharedMemory`Compiled`GetSharedMemoryDataType[]]+1]]];
 
-GetSharedMemoryFlattenData[]:=Catch@Switch[CustomQuiet@GetSharedMemoryDataType[]
+GetSharedMemoryFlattenData[]:=Catch@Block[{temp=SharedMemory`Internal`GetSharedMemoryFlattenDataWithType[]},
+If[FailureQ[temp],$Failed,First@temp]
+];
+
+SharedMemory`Internal`GetSharedMemoryFlattenDataWithType[]:=Block[{dataType=GetSharedMemoryDataType[]},
+If[FailureQ@dataType,Return[$Failed]];
+{Switch[dataType
 ,"SignedInteger64",CustomQuiet@SharedMemory`Compiled`GetSharedMemoryFlattenDataSignedInteger64[]
 ,"Real64",CustomQuiet@SharedMemory`Compiled`GetSharedMemoryFlattenDataReal[]
-,_,CustomQuiet@SharedMemory`Compiled`GetSharedMemoryFlattenDataNumericArray[]];
+,"String",WithCleanup[CustomQuiet@SharedMemory`Compiled`GetSharedMemoryString[],SharedMemory`Compiled`FreeString[]]
+,_,CustomQuiet@SharedMemory`Compiled`GetSharedMemoryFlattenDataNumericArray[]]
+,dataType}];
 
 DeleteSharedMemory[]:=Catch@CustomQuiet@SharedMemory`Compiled`DeleteSharedMemory[];
 GetSharedMemoryFlattenLength[]:=Catch@CustomQuiet@SharedMemory`Compiled`GetSharedMemoryFlattenLength[];
 GetSharedMemoryRank[]:=Catch@CustomQuiet@SharedMemory`Compiled`GetSharedMemoryRank[];
 GetSharedMemoryDimensions[]:=Catch@CustomQuiet@SharedMemory`Compiled`GetSharedMemoryDimensions[];
 SetSharedMemoryDimensions[newDimensions_?VectorQ]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryDimensions[newDimensions];
-SetSharedMemoryPath[path_String]:=Catch@CustomQuiet@SharedMemory`Compiled`SetSharedMemoryPath[path];
+SetSharedMemoryPath[path_String]:=Catch[CustomQuiet@SharedMemory`Compiled`SetSharedMemoryPath[path];path];
 
 ,Print["SharedMemory`libraryPath should be set first before initializing the library."];$Failed]
 

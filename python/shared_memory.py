@@ -1,6 +1,7 @@
 import numpy as np
 import ctypes
 import os
+from typing import Union
 
 # CAN BE CHANGED BY USER
 LIBRARY_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","shared_memory.dll")
@@ -13,6 +14,8 @@ lib = np.ctypeslib.load_library("shared_memory.dll",LIBRARY_PATH)
 c_library_set_shared_memory_data_complex_float32 = lib.set_shared_memory_data_complex_float32
 c_library_set_shared_memory_data_complex_float64 = lib.set_shared_memory_data_complex_float64
 
+c_library_set_shared_memory_string = lib.set_shared_memory_string
+c_library_get_shared_memory_string = lib.get_shared_memory_string
 c_library_set_shared_memory_data_float32 = lib.set_shared_memory_data_float32
 c_library_set_shared_memory_data_float64 = lib.set_shared_memory_data_float64
 c_library_set_shared_memory_data_signed_8 = lib.set_shared_memory_data_signed_8
@@ -47,9 +50,10 @@ c_library_get_shared_memory_rank = lib.get_shared_memory_rank
 c_library_get_shared_memory_rank.argtypes = []
 c_library_get_shared_memory_rank.restype = np.intc
 c_library_get_shared_memory_data_type.argtypes = []
-c_library_get_shared_memory_data_type.restype = np.ubyte
+c_library_get_shared_memory_data_type.restype = np.intc
 c_library_get_shared_memory_flatten_length.argtypes = []
 c_library_get_shared_memory_flatten_length.restype = np.longlong
+
 
 c_library_get_shared_memory_dimensions.argtypes = [np.ctypeslib.ndpointer(np.ulonglong,flags='aligned,C_CONTIGUOUS,WRITEABLE')]
 c_library_get_shared_memory_dimensions.restype = np.intc
@@ -59,6 +63,13 @@ c_library_delete_shared_memory.restype = np.intc
 c_library_set_shared_memory_path.argtypes = [ctypes.c_char_p]
 c_library_set_shared_memory_path.restype = np.intc
 
+
+
+c_library_get_shared_memory_string.argtypes = [ctypes.c_char_p]
+c_library_get_shared_memory_string.restype = np.intc
+
+c_library_set_shared_memory_string.argtypes = [ctypes.c_char_p]
+c_library_set_shared_memory_string.restype = np.intc
 
 c_library_set_shared_memory_data_unsigned_8.argtypes = [np.ctypeslib.ndpointer(np.uint8,flags='aligned,C_CONTIGUOUS'),np.ctypeslib.ndpointer(np.ulonglong,flags='aligned,C_CONTIGUOUS'),ctypes.c_uint64]
 c_library_set_shared_memory_data_unsigned_8.restype = np.intc
@@ -177,7 +188,7 @@ def row_major_to_column_major(data:np.ndarray)->np.ndarray:
         new_dimensions2[:2]=new_dimensions2[[1,0]]
 
     # return np.reshape(np.transpose(data,new_dimensions1),new_dimensions2,order='F')
-    return np.reshape(np.transpose(data,new_dimensions1),new_dimensions2)
+    return np.ascontiguousarray(np.reshape(np.transpose(data,new_dimensions1),new_dimensions2,'C'))
 
 def set_shared_memory_path(path:str)->int:
     if type(path) == str:
@@ -192,7 +203,7 @@ def get_shared_memory_dimensions()->np.ndarray:
     return output
 
 def get_shared_memory_data_type() -> type:
-    return [np.uint8,np.uint16,np.uint32,np.uint64,np.int8,np.int16,np.int32,np.int64,np.float32,np.float64,np.complex64,np.complex128][check_library_error(c_library_get_shared_memory_data_type())]
+    return [np.uint8,np.uint16,np.uint32,np.uint64,np.int8,np.int16,np.int32,np.int64,np.float32,np.float64,np.complex64,np.complex128,str][check_library_error(c_library_get_shared_memory_data_type())]
 
 def get_shared_memory_rank()->int:
     return check_library_error(c_library_get_shared_memory_rank())
@@ -206,9 +217,13 @@ def get_shared_memory_flatten_length()->int:
 def get_shared_memory_flatten_data()->np.ndarray:
     # output = np.repeat(0,c_library_get_shared_memory_flatten_length())
     shared_memory_type = get_shared_memory_data_type()
-    # output = 
-
-    # output = output.astype(np.double, copy=False)
+    
+    if shared_memory_type == str:
+        # output = np.repeat(np.array(0,dtype=np.uint8,order='C'),get_shared_memory_flatten_length())
+        # output = bytearray(get_shared_memory_flatten_length())
+        output = b' '*get_shared_memory_flatten_length()
+        check_library_error(c_library_get_shared_memory_string(output))
+        return output.decode('utf-8')
 
     output = np.repeat(np.array(0,dtype=shared_memory_type,order='C'),get_shared_memory_flatten_length())
 
@@ -245,10 +260,16 @@ def get_shared_memory_flatten_data()->np.ndarray:
 def get_shared_memory_data()->np.ndarray:
     output = get_shared_memory_flatten_data()
 
+    if get_shared_memory_data_type() == str:
+        return output
+
     return column_major_to_row_major(np.reshape(output,get_shared_memory_dimensions(),order='C'))
     
+# data
+def set_shared_memory_data(data:Union[np.ndarray,str]):
 
-def set_shared_memory_data(data:np.ndarray):
+    if type(data) == str:
+        return check_library_error(c_library_set_shared_memory_string(data.encode('utf-8')))
 
     if type(data) == list:
         data = np.array(data,order='C')
@@ -262,12 +283,13 @@ def set_shared_memory_data(data:np.ndarray):
 
     if type(data) != np.ndarray:
         raise TypeError("Data should be a numpy array")
-    # print('before: ',data)
+    
     data=row_major_to_column_major(data)
-    # print('after: ',data)
+    
     data_type = data.dtype
     temp_rank = data.ndim
     temp_dims = np.array(data.shape,dtype=np.uint64,order='C')
+    
     
     if data_type == np.uint8:
         check_library_error(c_library_set_shared_memory_data_unsigned_8(data,temp_dims,temp_rank))

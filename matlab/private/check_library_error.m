@@ -3,17 +3,23 @@ function output = check_library_error(value)
     if value < 0
         switch value
             case -1
-                error('Library path is not set')
+                throw(MException('SharedMemory:emptyLibraryPathError','Library path is not set'));
+%                 error('Library path is not set')
             case -2
-                error('Error in accessing shared file (probably file does not exist)')
+                throw(MException('SharedMemory:acessError','Error in accessing shared file (probably file does not exist)'));
+%                 error('Error in accessing shared file (probably file does not exist)')
             case -3
-                error('Can''t read library_path from memory')
+                throw(MException('SharedMemory:parsingPathError','Can''t read library_path from memory'));
+%                 error('Can''t read library_path from memory')
             case -4
-                error('Can''t create shared memory')
+                throw(MException('SharedMemory:canNotCreateSharedMemoryError','Can''t create shared memory'));
+%                 error('Can''t create shared memory')
             case -5
-                error('New Rank doesn''t match the previous rank')
+                throw(MException('SharedMemory:newRankDoesNotMatchPreviousRankError','New Rank doesn''t match the previous rank'));
+%                 error('New Rank doesn''t match the previous rank')
             otherwise
-                error(strcat('Invalid error code is given: ',int2str(value)))
+                throw(MException('SharedMemory:invalidErrorCode','Error code (%d) is not valid',value));
+%                 error(strcat('Invalid error code is given: ',int2str(value)))
         end
     end
 end
