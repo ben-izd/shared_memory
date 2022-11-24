@@ -3,7 +3,7 @@
 ![poster2](https://user-images.githubusercontent.com/56647066/188800877-61aa5b15-058f-48dc-aefc-427a20898a0c.jpg)
 
 
-Easily and efficiently share rectangular double-typed data (any dimension) between [Python](https://python.org) - [Julia](https://julialang.org) - [Matlab](https://mathworks.com) - [Wolfram Language (Mathematica)](https://www.wolfram.com/mathematica/) using shared memory. Each language somehow implements sharing data either for its subkernel or same processes but now you can share between them at a fast speed. It's backed by a library written in [Rust](https://rust-lang.org/).
+Easily and efficiently share rectangular (any dimension, any type) or String between [Python](https://python.org) - [Julia](https://julialang.org) - [Matlab](https://mathworks.com) - [Wolfram Language (Mathematica)](https://www.wolfram.com/mathematica/) using shared memory. Each language somehow implements sharing data either for its subkernel or same processes but now you can share between them at a fast speed. It's backed by a library written in [Rust](https://rust-lang.org/).
 
 To make your life and mine easier, all the function names are the same (snake_case) except Mathematica which does not support underline and is CamelCase. All of the them have simple logic `action_shared_memory[_property]`, like `get_shared_memory_flatten_length` in Julia,Python and Matlab which is `GetSharedMemoryFlattenLength` in Mathematica and all have the same functionality.
 
