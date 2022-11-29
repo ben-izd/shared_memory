@@ -52,10 +52,10 @@ addpath("C:\\download\\shared_memory\\matlab");
 set_shared_memory_path("C:\\download\\shared_memory\\data")
 
 % Receive
-data=get_shared_memory_data();
+data = get_shared_memory_data();
 
 % Manipulate
-new_data=mpower(data,2);
+new_data = mpower(data,2);
 
 % Share
 set_shared_memory_data(new_data)
@@ -63,7 +63,7 @@ set_shared_memory_data(new_data)
 4. Mathematica (Wolfram Language)
 ```wolfram
 (* Setup *)
-SharedMemory`libraryPath ="C:\\download\\shared_memory\\shared_memory.dll";
+SharedMemory`libraryPath = "C:\\download\\shared_memory\\shared_memory.dll";
 Get["C:\\download\\shared_memory\\mathematica\\shared_memory.wl"];
 SetSharedMemoryPath["C:\\download\\shared_memory\\data"];
 
@@ -179,9 +179,9 @@ public class Sample {
         for (int row = 0; row < height; row++) {
             for (int column = 0; column < width; column++) {
 
-                red=data[row][column][0] & 0xFF;
-                green=data[row][column][1] & 0xFF;
-                blue=data[row][column][2] & 0xFF;
+                red = data[row][column][0] & 0xFF;
+                green = data[row][column][1] & 0xFF;
+                blue = data[row][column][2] & 0xFF;
                 rgb = (red << 16) | (green << 8) | blue;
                 bufferedImage.setRGB(column,row,rgb);
             }
