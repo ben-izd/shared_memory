@@ -1,12 +1,26 @@
-// Because of the nature of the program, testing should be done on a single thread (rust default is multi-threaded)
-// Use  "cargo test -- --test-threads=1" to run the test
+//! Author Benyamin Izadpanah
+//! Copyright: Benyamin Izadpanah
+//! Start Date: 2022-11-5 (year-month-day)
+//! Last Date Modified: 2022-11-26
+//! Last Version Used: Rust 1.65
+//! Github Repository: <a href="https://github.com/ben-izd/">Repository Link</a>
+//!
+//! Summary:
+//! This library was written to used as a shared library from different interfaces in different languages.
+//! The goal is the ability to share data between interfaces through memory.
+//!
+//! # Testing
+//! Because of the nature of the program, testing should be done on a single thread (rust default is multi-threaded)
+//! Use "cargo test -- --test-threads=1" to run all test in a single thread
+
 
 #[cfg(test)]
 mod test {
-    use std::ffi::{ CString};
+    use std::ffi::{CString};
     use std::os::raw::{c_ulonglong, c_longlong, c_int, c_char};
     use crate::general::*;
-
+    use std::env;
+    use std::path::PathBuf;
 
     // Scenario 1|2 include:
     // setting a path
@@ -19,7 +33,10 @@ mod test {
     // This scenario should be run first to set the path for the future uses.
     #[test]
     fn scenario_1_length_3_with_setup() {
-        internal_set_shared_memory_path(r"D:\projects\Rust\10. shared memory\rust\data".to_string());
+        let mut temp_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        temp_dir.push("data");
+
+        internal_set_shared_memory_path(temp_dir.to_str().unwrap().to_string());
         complete_test_scenario::<1, 3, f32>(&[11., 22., 33.], &[3]);
         complete_test_scenario::<1, 3, f64>(&[11., 22., 33.], &[3]);
         complete_test_scenario::<1, 3, u8>(&[11, 22, 33], &[3]);
@@ -131,31 +148,29 @@ mod test {
 
     #[test]
     fn test_string() {
-
         let my_string = CString::new("This is a sample text").unwrap();
 
         set_shared_memory_string(my_string.as_ptr());
-        assert_eq!(get_shared_memory_flatten_length(),21);
+        assert_eq!(get_shared_memory_flatten_length(), 21);
 
         // assert_eq!(get_shared_memory_string_utf16_length(),21);
-        assert_eq!(get_shared_memory_rank(),1);
-        assert_eq!(get_shared_memory_data_type(),12);
+        assert_eq!(get_shared_memory_rank(), 1);
+        assert_eq!(get_shared_memory_data_type(), 12);
 
         let temp_dim: [u64; 1] = [0; 1];
         get_shared_memory_dimensions(temp_dim.as_ptr() as *mut u64);
-        assert_eq!(temp_dim,[21]);
+        assert_eq!(temp_dim, [21]);
 
-        let mut output_string:[i8;21] = [0;21];
+        let mut output_string: [i8; 21] = [0; 21];
         get_shared_memory_string(output_string.as_ptr() as *mut c_char);
 
-        let output_string_u8 = unsafe{ std::slice::from_raw_parts(output_string.as_ptr() as *const u8, output_string.len()) };
-        assert_eq!(output_string_u8,my_string.as_bytes());
+        let output_string_u8 = unsafe { std::slice::from_raw_parts(output_string.as_ptr() as *const u8, output_string.len()) };
+        assert_eq!(output_string_u8, my_string.as_bytes());
 
         // match internal_read_shared_memory_string(){
         //     Ok(v)=> { assert_eq!(v.1,my_string.to_str().unwrap()) },
         //     Err(e) => {panic!("Error {}",e)}
         // };
-
     }
 
     #[test]
@@ -189,10 +204,9 @@ mod test {
 }
 
 
-// This module is the core of the library and is used
-//  by Julia, Matlab and Python
+/// This module is the core of the library and is used by Java, Julia, Matlab and Python <br>
+/// Error codes are universal, any change in the following code should be reflected in all the interfaces
 mod general {
-
     use std::ffi::{CStr};
     use std::os::raw::*;
     use shared_memory::*;
@@ -207,23 +221,25 @@ mod general {
     const CAN_NOT_CREATE_SHARED_MEMORY_ERROR: c_int = -4;
     const NEW_RANK_DOES_NOT_MATCH_PREVIOUS_RANK_ERROR: c_int = -5;
     pub const INVALID_DATA_TYPE: c_int = -6;
-    const INVALID_UTF8_STRING:c_int = -7;
-
-
+    const INVALID_UTF8_STRING: c_int = -7;
 
 
     const NUMBER_OF_ITEMS_WITHOUT_RANK: usize = 9;
 
-    // GLOBAL VARIABLE
-    // Used to store the shared memory path
+    /// A GLOBAL VARIABLE, used to store the shared memory path
     static mut SHARED_MEMORY_FILE_PATH: Option<String> = None;
 
+    /// Specified the general layout of shared memory <br>
+    /// First is type, then rank, then dimension array, then data
     pub enum AddressesOffset {
         Type = 0,
         Rank = 1,
-        Dimensions = 9
+        Dimensions = 9,
     }
 
+    /// #### All the supported types.
+    /// The exact same numbers used in the interfaces. Any change should be reflected there. <br>
+    /// Negative values are used for return error. Do not used negative values.
     #[derive(PartialEq, Clone)]
     pub enum SharedMemoryType {
         Unsigned8 = 0,
@@ -238,7 +254,7 @@ mod general {
         Float64 = 9,
         ComplexFloat32 = 10,
         ComplexFloat64 = 11,
-        UTF8String =12
+        UTF8String = 12,
     }
 
     impl From<u8> for SharedMemoryType {
@@ -262,64 +278,77 @@ mod general {
         }
     }
 
-    // used for mathematica
-    impl SharedMemoryType {
-        pub fn to_library_link(self) -> u8 {
-            match self {
-                SharedMemoryType::Unsigned8 => 2,
-                SharedMemoryType::Unsigned16 => 4,
-                SharedMemoryType::Unsigned32 => 6,
-                SharedMemoryType::Unsigned64 => 8,
-                SharedMemoryType::Signed8 => 1,
-                SharedMemoryType::Signed16 => 3,
-                SharedMemoryType::Signed32 => 5,
-                SharedMemoryType::Signed64 => 7,
-                SharedMemoryType::Float32 => 9,
-                SharedMemoryType::Float64 => 10,
-                SharedMemoryType::ComplexFloat32 => 11,
-                SharedMemoryType::ComplexFloat64 => 12,
-                _ => unreachable!()
-            }
-        }
-    }
-
-
+    /// Return global SHARED_MEMORY_FILE_PATH. <br>
+    /// Will return `Err(EMPTY_LIBRARY_PATH_ERROR_CODE)` if its None
     pub fn internal_get_shared_memory_path<'a>() -> Result<&'a String, c_int> {
         match unsafe { &SHARED_MEMORY_FILE_PATH } {
             Some(ref v) => {
                 Ok(v)
             }
-            None =>Err(EMPTY_LIBRARY_PATH_ERROR_CODE)
+            None => Err(EMPTY_LIBRARY_PATH_ERROR_CODE)
         }
     }
 
+    /// ### Implementation Note
+    /// It's not supported to add method to existing type not define in this package. <br>
+    /// trait is used to add extra functionality to Shmem type.
     pub trait SharedMemoryInterface {
+
+        /// Return shared memory data dimensions
         fn get_dimensions(&self) -> &[u64];
+
+        /// Return shared memory data type
         fn get_data_type(&self) -> SharedMemoryType;
+
+        /// Return shared memory data rank
         fn get_rank(&self) -> usize;
 
+        /// ## Internal Use
+        /// Return the start address of shared memory data type
         fn internal_get_data_type_ptr(&self) -> *const u8;
+
+        /// ## Internal Use
+        /// Return the start address of shared memory data rank
         fn internal_get_rank_ptr(&self) -> *const u8;
+
+        /// ## Internal Use
+        /// Return the start address of shared memory data dimensions
         fn internal_get_dimensions_ptr(&self) -> *const u8;
+
+        /// ## Internal Use
+        /// Return the start address of shared memory data
         fn internal_get_data_ptr(&self) -> *const u8;
 
+        /// Return the product of shared memory data dimensions
         fn get_flatten_length(&self) -> usize;
+
+        /// Unload shared memory from data
         fn delete_shared_memory(self);
 
-        fn get_data_as_cstr(&self) ->  &CStr;
-        fn get_data_as_str(&self) -> Result<&str,c_int>;
+        /// Return shared memory data as CStr
+        fn get_data_as_cstr(&self) -> &CStr;
 
-        fn set_dimensions(&self,new_dimensions: &[u64]) -> c_int;
+        /// Return shared memory data as Str. <br>
+        /// Return Err if data is not valid. <br>
+        /// Return Ok if data is a valid UTF-8 string, Err(INVALID_UTF8_STRING) if not
+        fn get_data_as_str(&self) -> Result<&str, c_int>;
+
+        /// Change shared memory data dimensions. New dimension should match previous rank because
+        /// of the shared memory layout. <br>
+        /// Return 0 if ranks matched, NEW_RANK_DOES_NOT_MATCH_PREVIOUS_RANK_ERROR if not
+        fn set_dimensions(&self, new_dimensions: &[u64]) -> c_int;
+
+        /// Create new shared memory given the address of data, its dimension (dims_raw), rank and type (type_id) <br>
+        /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+        /// See SharedMemoryType enum for supported types and their ID.
         fn new<T>(data: *const T, dims_raw: *const u64, rank: u64, type_id: u8) -> c_int;
-        fn get_flatten_data<T>(&self,array_source: *mut T) -> c_int;
+
+        /// Copy shared memory data to array_source
+        /// Return 0
+        fn get_flatten_data<T>(&self, array_source: *mut T) -> c_int;
     }
 
     impl SharedMemoryInterface for Shmem {
-
-        fn get_flatten_length(&self) -> usize {
-            self.get_dimensions().iter().product::<u64>() as usize
-        }
-
         fn get_dimensions(&self) -> &[u64] {
             unsafe { std::slice::from_raw_parts(self.internal_get_dimensions_ptr() as *const u64, self.get_rank()) }
         }
@@ -348,33 +377,38 @@ mod general {
             unsafe { self.as_ptr().offset(AddressesOffset::Dimensions as isize + self.get_rank() as isize * 8) }
         }
 
-        fn delete_shared_memory(mut self){
-            self.set_owner(true);
+        fn get_flatten_length(&self) -> usize {
+            self.get_dimensions().iter().product::<u64>() as usize
         }
 
-        fn get_data_as_str(&self) -> Result<&str,c_int> {
-            let temp_slice = unsafe { std::slice::from_raw_parts(self.internal_get_data_ptr(), self.get_flatten_length() - 1 ) };
-            match std::str::from_utf8(temp_slice) {
-                Ok(v) => Ok(v),
-                Err(_) => Err(INVALID_UTF8_STRING)
-            }
+        fn delete_shared_memory(mut self) {
+            self.set_owner(true);
         }
 
         fn get_data_as_cstr(&self) -> &CStr {
             unsafe { CStr::from_ptr(self.internal_get_data_ptr() as *const c_char) }
         }
 
-        fn set_dimensions(&self,new_dimensions : &[u64]) -> c_int {
+
+        fn get_data_as_str(&self) -> Result<&str, c_int> {
+            let temp_slice = unsafe { std::slice::from_raw_parts(self.internal_get_data_ptr(), self.get_flatten_length() - 1) };
+            match std::str::from_utf8(temp_slice) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(INVALID_UTF8_STRING)
+            }
+        }
+
+        fn set_dimensions(&self, new_dimensions: &[u64]) -> c_int {
             let current_rank = self.get_rank();
             if current_rank != new_dimensions.len() || new_dimensions.iter().product::<u64>() != self.get_flatten_length() as u64 {
                 NEW_RANK_DOES_NOT_MATCH_PREVIOUS_RANK_ERROR
-            }else {
+            } else {
                 unsafe { copy_nonoverlapping(new_dimensions.as_ptr(), self.internal_get_dimensions_ptr() as *mut u64, current_rank) };
                 0
             }
         }
 
-        fn new<T>( data: *const T, dims_raw: *const u64, rank: u64, type_id: u8) -> c_int {
+        fn new<T>(data: *const T, dims_raw: *const u64, rank: u64, type_id: u8) -> c_int {
             let path = match internal_get_shared_memory_path() {
                 Ok(v) => v,
                 Err(e) => { return e; }
@@ -393,17 +427,23 @@ mod general {
             unsafe {
                 // Type
                 *(shared_memory.internal_get_data_type_ptr() as *mut u8) = type_id;
+
                 // Rank
                 *(shared_memory.internal_get_rank_ptr() as *mut u64) = rank as u64;
+
                 // Dimensions
                 copy_nonoverlapping::<u64>(dims_raw, shared_memory.internal_get_dimensions_ptr() as *mut u64, rank_usize);
+
                 // Data
                 copy_nonoverlapping::<T>(data, shared_memory.internal_get_data_ptr() as *mut T, data_flatten_length);
             }
+
+            // Prevent data from cleaning at the end of the code block
             shared_memory.set_owner(false);
+
             0
         }
-        fn get_flatten_data<T>(&self,array_source: *mut T) -> c_int{
+        fn get_flatten_data<T>(&self, array_source: *mut T) -> c_int {
             let dims = self.get_dimensions();
             let data_type = self.get_data_type();
             let data_flatten_length = dims.iter().product::<u64>() as usize * if data_type == SharedMemoryType::ComplexFloat32 || data_type == SharedMemoryType::ComplexFloat64 { 2 } else { 1 };
@@ -414,7 +454,10 @@ mod general {
         }
     }
 
-    // Try to access the shared memory
+    /// ## Internal Use
+    /// Try to access the shared memory. Will retry 5 times with 1 millisecond as delay between
+    /// each try. <br>
+    /// Will Return Err(ACCESS_ERROR_CODE) if can not access the shared memory.
     pub fn internal_open_shared_memory() -> Result<Shmem, c_int> {
         let path = internal_get_shared_memory_path()?;
         // ShmemConf::new().flink(path).open().map_err(|_| ACCESS_ERROR_CODE)
@@ -424,11 +467,14 @@ mod general {
         }).map_err(|_| ACCESS_ERROR_CODE)
     }
 
-    // Set the shared memory path so other functions can work seamlessly
+    /// ## Internal Use
+    /// Set the shared memory path so other functions can work seamlessly.
     pub fn internal_set_shared_memory_path(path: String) {
         unsafe { SHARED_MEMORY_FILE_PATH = Some(path) }
     }
 
+    /// ## Exposed
+    /// Return data type id (all non-negative values), negative value in case of any error.
     #[no_mangle]
     pub extern "C" fn get_shared_memory_data_type() -> c_int {
         match internal_open_shared_memory() {
@@ -437,20 +483,27 @@ mod general {
         }
     }
 
-    // new dimension should match with previous rank
+    /// ## Exposed
+    /// Change shared memory dimension. <br>
+    /// New dimension should match with previous rank. <br>
+    /// Return 0 of successful, negative values in case of any error.
     #[no_mangle]
     pub extern "C" fn set_shared_memory_dimensions(new_dimensions_raw: *const c_ulonglong) -> c_int {
         match internal_open_shared_memory() {
             Ok(shared_memory) => {
                 let current_rank = shared_memory.get_rank();
                 let new_dimensions = unsafe { std::slice::from_raw_parts(new_dimensions_raw, current_rank) };
-                shared_memory.set_dimensions(new_dimensions );
+                shared_memory.set_dimensions(new_dimensions);
                 0
-            },
+            }
             Err(e) => e
         }
     }
 
+
+    /// ## Exposed
+    /// Return shared memory rank. <br>
+    /// Return >= 0 if successful, negative values if not.
     #[no_mangle]
     pub extern "C" fn get_shared_memory_rank() -> c_int {
         match internal_open_shared_memory() {
@@ -459,18 +512,27 @@ mod general {
         }
     }
 
+    /// ## Exposed
+    /// Copy shared memory dimension to array address. <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// Passing the address of shared memory dimension as input result in undefined behaviour.
     #[no_mangle]
     pub extern "C" fn get_shared_memory_dimensions(array: *mut c_ulonglong) -> c_int {
         match internal_open_shared_memory() {
             Ok(v) => {
-                let dims=v.get_dimensions();
+                let dims = v.get_dimensions();
                 unsafe { copy_nonoverlapping::<u64>(dims.as_ptr() as *const u64, array, dims.len()) };
                 0
-            },
+            }
             Err(e) => e
         }
     }
 
+    /// ## Exposed
+    /// Set shared memory path used to access the shared memory. <br>
+    /// If path was a valid UTF-8 string, a copy will be saved. <br>
+    /// Return 0 if successful, Negative values if not.
+    /// See internal_set_shared_memory_path()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_path(path: *const c_char) -> c_int {
         match unsafe { CStr::from_ptr(path).to_str() } {
@@ -484,6 +546,11 @@ mod general {
         }
     }
 
+    /// ## Exposed
+    /// Return product of shared memory dimension. <br>
+    /// Note: Complex types consist of 2 numbers but counted as 1 element. <br>
+    /// Return >= 0 if successful, Negative values if not.
+    /// See SharedMemoryInterface::get_flatten_length()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_length() -> c_longlong {
         match internal_open_shared_memory() {
@@ -494,6 +561,10 @@ mod general {
         }
     }
 
+    /// ## Exposed
+    /// Unload shared memory data. If it can not access it, the file used to access it will be deleted. <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::delete_shared_memory()
     #[no_mangle]
     pub extern "C" fn delete_shared_memory() -> c_int {
         let path = match internal_get_shared_memory_path() {
@@ -503,103 +574,155 @@ mod general {
         match internal_open_shared_memory() {
             Ok(v) => {
                 v.delete_shared_memory();
-            },
+            }
             Err(_) => {
-                // remove the file shared memory used
+                // Tries to remove the file shared memory used
                 let _ = std::fs::remove_file(path);
             }
         };
         0
     }
 
-
-    // accept a null-terminated string
-    // length of the string without null character will be saved but the shared_memory's data contain null character
+    /// ## Exposed
+    /// string is a null-terminated string. <br>
+    /// length of the string without null character will be saved but the shared memory data contain
+    /// null character. <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created.
     #[no_mangle]
-    pub extern "C" fn set_shared_memory_string(string:*const c_char) -> c_int {
+    pub extern "C" fn set_shared_memory_string(string: *const c_char) -> c_int {
         let data = unsafe { CStr::from_ptr(string) };
 
-        set_shared_memory_data(data.as_ptr() as *const u8,[data.to_bytes().len() as u64].as_ptr(),1,12)
+        set_shared_memory_data(data.as_ptr() as *const u8, [data.to_bytes().len() as u64].as_ptr(), 1, 12)
     }
 
+    /// ## Exposed
+    /// Copy data to string address. Null-character is not included. <br>
+    /// Return 0 if successful, Negative values if not.
     #[no_mangle]
-    pub extern "C" fn get_shared_memory_string(string:*mut c_char) -> c_int {
-
+    pub extern "C" fn get_shared_memory_string(string: *mut c_char) -> c_int {
         get_shared_memory_flatten_data(string)
-
     }
 
+    /// A generic function, copy data to array source. Length of copy is dependant of type and flatten_length. <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_flatten_data()
     pub fn get_shared_memory_flatten_data<T>(array_source: *mut T) -> c_int {
         match internal_open_shared_memory() {
             Ok(shared_memory) => {
-               shared_memory.get_flatten_data(array_source)
+                shared_memory.get_flatten_data(array_source)
             }
             Err(e) => e
         }
     }
 
+    /// ## Exposed
+    /// Copy u8 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_unsigned_8(array_source: *mut c_uchar) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy u16 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_unsigned_16(array_source: *mut c_ushort) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy u32 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_unsigned_32(array_source: *mut c_ulong) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy u64 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_unsigned_64(array_source: *mut c_ulonglong) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy i8 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_signed_8(array_source: *mut c_char) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy i16 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_signed_16(array_source: *mut c_short) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy i32 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_signed_32(array_source: *mut c_long) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy i64 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_signed_64(array_source: *mut c_longlong) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copy f32 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_float32(array_source: *mut c_float) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
+    /// ## Exposed
+    /// Copying f64 data to array_source <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See SharedMemoryInterface::get_shared_memory_flatten_data()
     #[no_mangle]
     pub extern "C" fn get_shared_memory_flatten_data_float64(array_source: *mut c_double) -> c_int {
         get_shared_memory_flatten_data(array_source)
     }
 
 
+    /// A generic function, set shared memory data. If a file exist, it tries to unload it first then create a new one. <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See SharedMemoryInterface::new()
     pub fn set_shared_memory_data<T>(data: *const T, dims_raw: *const u64, rank: u64, type_id: u8) -> c_int {
         match internal_open_shared_memory() {
             Ok(v) => {
                 v.delete_shared_memory()
-            },
+            }
             Err(_) => {}
         }
-        Shmem::new(data,dims_raw,rank,type_id)
+        Shmem::new(data, dims_raw, rank, type_id)
     }
 
-
+    /// ## Exposed
+    /// Copy u8 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_unsigned_8(
         data: *const c_uchar,
@@ -609,6 +732,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 0)
     }
 
+    /// ## Exposed
+    /// Copy u16 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_unsigned_16(
         data: *const c_ushort,
@@ -618,6 +745,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 1)
     }
 
+    /// ## Exposed
+    /// Copy u32 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_unsigned_32(
         data: *const c_ulong,
@@ -627,6 +758,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 2)
     }
 
+    /// ## Exposed
+    /// Copy u64 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_unsigned_64(
         data: *const c_ulonglong,
@@ -636,6 +771,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 3)
     }
 
+    /// ## Exposed
+    /// Copy i8 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_signed_8(
         data: *const c_char,
@@ -645,6 +784,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 4)
     }
 
+    /// ## Exposed
+    /// Copy i16 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_signed_16(
         data: *const c_short,
@@ -654,6 +797,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 5)
     }
 
+    /// ## Exposed
+    /// Copy i32 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_signed_32(
         data: *const c_long,
@@ -663,6 +810,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 6)
     }
 
+    /// ## Exposed
+    /// Copy i64 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_signed_64(
         data: *const c_longlong,
@@ -673,6 +824,10 @@ mod general {
     }
 
 
+    /// ## Exposed
+    /// Copy f32 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_float32(
         data: *const c_float,
@@ -682,6 +837,10 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 8)
     }
 
+    /// ## Exposed
+    /// Copy f64 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_float64(
         data: *const c_double,
@@ -691,6 +850,11 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 9)
     }
 
+    /// ## Exposed
+    /// Copy f32 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Because its a complex array, each two element is counted as one.
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_complex_float32(
         data: *const c_float,
@@ -700,50 +864,82 @@ mod general {
         set_shared_memory_data(data, dims_raw, rank, 10)
     }
 
+    /// ## Exposed
+    /// Copy f64 data with dims_raw dimension and specified rank to shared memory <br>
+    /// Because its a complex array, each two element is counted as one.
+    /// Return 0 if successful, CAN_NOT_CREATE_SHARED_MEMORY_ERROR if shared memory can not be created. <br>
+    /// See set_shared_memory_data()
     #[no_mangle]
     pub extern "C" fn set_shared_memory_data_complex_float64(
         data: *const c_double,
         dims_raw: *const c_ulonglong,
         rank: c_ulonglong,
     ) -> c_int {
-
         set_shared_memory_data(data, dims_raw, rank, 11)
     }
-
-
 }
 
 
-// This module is for Wolfram Language (Mathematica)
-// If you don't have or won't use it, comment this section + it's dependency in Cargo.toml (wolfram-library-link)
+/// This module provide special interface for Wolfram Language (Mathematica) <br>
+/// If you don't have or won't use it, comment this section + it's dependency in Cargo.toml (wolfram-library-link)
 mod mathematica {
-
     use wolfram_library_link::sys::{WolframLibraryData, mint, MArgument, MType_Real, MTensor, MType_Integer, MNumericArray};
     use crate::general::*;
-    use std::os::raw::{c_char,c_int, c_ulonglong};
+    use std::os::raw::{c_char, c_int, c_ulonglong};
     use std::ptr::copy_nonoverlapping;
     use shared_memory::{Shmem};
-
-    // pub const TENSOR_TYPE: u32 = MType_Real;
 
     use wolfram_library_link as wll;
 
 
+    /// translate SharedMemoryType to Mathematica Type ID
+    impl SharedMemoryType {
+        pub fn to_library_link(self) -> u8 {
+            match self {
+                SharedMemoryType::Unsigned8 => 2,
+                SharedMemoryType::Unsigned16 => 4,
+                SharedMemoryType::Unsigned32 => 6,
+                SharedMemoryType::Unsigned64 => 8,
+                SharedMemoryType::Signed8 => 1,
+                SharedMemoryType::Signed16 => 3,
+                SharedMemoryType::Signed32 => 5,
+                SharedMemoryType::Signed64 => 7,
+                SharedMemoryType::Float32 => 9,
+                SharedMemoryType::Float64 => 10,
+                SharedMemoryType::ComplexFloat32 => 11,
+                SharedMemoryType::ComplexFloat64 => 12,
+                _ => unreachable!()
+            }
+        }
+    }
+
+    /// ## Wolfram Exposed
+    /// Set shared memory path used to access the shared memory
+    /// See internal_set_shared_memory_path()
     #[wll::export]
     fn set_shared_memory_path_mathematica(new_path: String) {
         internal_set_shared_memory_path(new_path)
     }
 
+    /// ## Wolfram Exposed
+    /// Return shared memory data rank
+    /// Return >= 0 if successful, negative values if not.
     #[wll::export]
     fn get_shared_memory_rank_mathematica() -> i64 {
         get_shared_memory_rank() as i64
     }
 
+    /// ## Wolfram Exposed
+    /// Return shared memory data rank
+    /// Return data type id (all non-negative values), negative value in case of any error.
     #[wll::export]
     fn get_shared_memory_data_type_mathematica() -> i64 {
         get_shared_memory_data_type() as i64
     }
 
+    /// ## Exposed
+    /// Set output the flatten length of shared memory data
+    /// Return 0 of successful, negative values if not
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_flatten_length_mathematica(
         _lib_data: WolframLibraryData,
@@ -755,13 +951,14 @@ mod mathematica {
             Ok(v) => {
                 *res.integer = v.get_flatten_length() as mint;
                 0
-            },
+            }
             Err(e) => e
         }
     }
 
-
-
+    /// ## Exposed
+    /// Set output the dimension of shared memory data
+    /// Return 0 of successful, negative values if not
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_dimensions_mathematica(
         lib_data: WolframLibraryData,
@@ -786,6 +983,9 @@ mod mathematica {
         }
     }
 
+    /// ## Exposed
+    /// Set output the flatten shared memory data with f64 type
+    /// Return 0 of successful, negative values if not
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_flatten_data_float64_mathematica(
         lib_data: WolframLibraryData,
@@ -811,6 +1011,9 @@ mod mathematica {
         error_code
     }
 
+    /// ## Exposed
+    /// Set output the flatten shared memory data with i64 type
+    /// Return 0 of successful, negative values if not
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_flatten_data_signed_64_mathematica(
         lib_data: WolframLibraryData,
@@ -836,6 +1039,9 @@ mod mathematica {
         error_code
     }
 
+    /// ## Exposed
+    /// Set output the shared memory data as NumericArray with different data type
+    /// Return 0 of successful, negative values if not
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_flatten_data_numeric_array_mathematica(
         lib_data: WolframLibraryData,
@@ -857,7 +1063,7 @@ mod mathematica {
         let numeric_array_type = shared_memory_data_type.clone().to_library_link();
 
         // internal_get_shared_memory_dimensions_raw(&shared_memory).as_ptr() as *const i64
-        (numeric_array_functions.MNumericArray_new.unwrap())(numeric_array_type.into(), 1, [shared_memory.get_flatten_length()].as_ptr() as *const i64 , &mut numeric_array);
+        (numeric_array_functions.MNumericArray_new.unwrap())(numeric_array_type.into(), 1, [shared_memory.get_flatten_length()].as_ptr() as *const i64, &mut numeric_array);
         let numeric_array_data = (numeric_array_functions.MNumericArray_getData.unwrap())(numeric_array);
         let error_code = match shared_memory_data_type {
             SharedMemoryType::Unsigned8 => get_shared_memory_flatten_data_unsigned_8(numeric_array_data as *mut u8),
@@ -881,8 +1087,15 @@ mod mathematica {
         0
     }
 
-    static mut MATHEMATICA_STRING_CONFIG:Option<Shmem> = None;
+    /// Due to Mathematica design for sharing string, you will provide the address, Mathematica will
+    /// read UTF-8 string from it and then you can free that. In our case because we used Shmem, If
+    /// it goes out of scope the addresses will be invalid, to prevent that, this dummy variable is used. <br>
+    /// After Mathematica reads the string, None will be assigned to the variable.
+    static mut MATHEMATICA_STRING_CONFIG: Option<Shmem> = None;
 
+    /// ## Exposed
+    /// Set output the address of actual shared memory data (no copy is involved) <br>
+    /// Return 0 of successful, ACCESS_ERROR_CODE if it can't access the shared memory
     #[no_mangle]
     pub unsafe extern "C" fn get_shared_memory_string_mathematica(
         _lib_data: WolframLibraryData,
@@ -891,19 +1104,20 @@ mod mathematica {
         res: MArgument,
     ) -> c_int {
         match internal_open_shared_memory() {
-            Ok(v)=> {
+            Ok(v) => {
                 *res.utf8string = v.get_data_as_cstr().as_ptr() as *mut c_char;
                 MATHEMATICA_STRING_CONFIG = Some(v);
-
-                // let temp = CString::new("abc").unwrap();
-                // *res.utf8string = temp.as_ptr() as *mut c_char;
-                // std::mem::forget(temp);
                 0
-            },
+            }
             Err(e) => e
         }
     }
 
+    /// ## Exposed
+    /// This function is used to free the Shared memory (Shmem) session opened for sharing string to
+    /// Mathematica. <br>
+    /// Return 0 <br>
+    /// See Mathematica::get_shared_memory_string_mathematica()
     #[no_mangle]
     pub unsafe extern "C" fn internal_free_string_mathematica(
         _lib_data: WolframLibraryData,
@@ -915,6 +1129,10 @@ mod mathematica {
         0
     }
 
+    /// ## Exposed
+    /// Unload shared memory data. If it can not access it, the file used to access it will be deleted. <br>
+    /// Return 0 if successful, Negative values if not. <br>
+    /// See delete_shared_memory()
     #[no_mangle]
     pub unsafe extern "C" fn delete_shared_memory_mathematica(
         _lib_data: WolframLibraryData,
@@ -925,6 +1143,11 @@ mod mathematica {
         delete_shared_memory()
     }
 
+    /// ## Exposed
+    /// Change shared memory dimension. <br>
+    /// New dimension should match with previous rank. <br>
+    /// Return 0 of successful, negative values in case of any error. <br>
+    /// See set_shared_memory_dimensions()
     #[no_mangle]
     pub unsafe extern "C" fn set_shared_memory_dimensions_mathematica(
         lib_data: WolframLibraryData,
@@ -1005,7 +1228,6 @@ mod mathematica {
         args: *mut MArgument,
         _res: MArgument,
     ) -> c_int {
-
         let numeric_array = *((*args).numeric);
 
         let numeric_array_functions = *(*lib_data).numericarrayLibraryFunctions;

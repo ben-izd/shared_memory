@@ -1,3 +1,18 @@
+"""
+This script is written to test the integration of interface of SharedMemory library written for Python with other interfaces
+
+Author: Benyamin Izadpanah
+Copyright: Benyamin Izadpanah
+Github Repository: https://github.com/ben-izd/shared_memory
+Start Date: 2022-8
+Last date modified: 2022-11
+Version used for testing: Python 3.11
+
+Requirement:
+    - numpy module
+    - Make sure this file is executed alone (depend on __file__ and __name__ == '__main__')
+"""
+
 import sys
 import time
 import numpy as np
@@ -7,12 +22,12 @@ import os.path
 
 # import a single python file from your downloaded path
 import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","python"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "python"))
 from shared_memory import *
 
-data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"integeration_test_data")
-counter_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"integeration_test_counter")
-number_of_software = 4
+data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "integration_test_data")
+counter_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "integration_test_counter")
+number_of_software = 5
 try:
     if len(sys.argv) > 1:
         number_of_software = int(sys.argv[1])
@@ -22,7 +37,7 @@ except:
 
 
 # def log_my_message(text:str):
-#     with open(r"D:\projects\Mathematica\community\31. shared_memory\test-framework\integeration\log.txt",'a') as f:
+#     with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "log.txt"),'a') as f:
 #         f.write(text+"\n")
 
 # read counter_path shared memory
@@ -32,9 +47,9 @@ def get_counter() -> int:
 
 # add one to the counter_path shared memory
 def increment_counter():
-    temp=get_counter()
-    set_shared_memory_data([temp+1])
-    print(f"->{temp+1}")
+    temp = get_counter()
+    set_shared_memory_data(np.array([temp + 1], dtype = np.uint64))
+    print(f"->{int(temp + 1):d}")
     # log_my_message(f"[PYTHON] {temp}++\n")
 
 def share_data(data:np.ndarray):
@@ -58,7 +73,7 @@ class Utilities1(unittest.TestCase):
         dataset_3 = np.array([[[60, 68, 44, 31],[109, 26, 25, 124]],[[88, 18, 48, 39],[52, 25, 87, 37]],[[14, 67, 98, 125],[80, 16, 22, 20]]])
 
         # convert our sample dataset to all the possible formats
-        for dataset in (dataset_1,dataset_2,dataset_3):
+        for dataset in (dataset_1, dataset_2, dataset_3):
             for type in PYTHON_TYPES:
                 datasets.append(dataset.astype(type))
         self.datasets = datasets
@@ -67,9 +82,10 @@ class Utilities1(unittest.TestCase):
 
     def reshare(self,index:int):
         set_shared_memory_path(data_path)
-        actual_dataset=get_shared_memory_data()
-        expected_dataset=self.datasets[index]
-        self.assertTrue(np.array_equal(expected_dataset,actual_dataset))
+        actual_dataset = get_shared_memory_data()
+        expected_dataset = self.datasets[index]
+        self.assertTrue(np.array_equal(expected_dataset, actual_dataset))
+        self.assertEqual(expected_dataset.dtype,actual_dataset.dtype)
         # log_my_message(f"[PYTHON][CHECK] - {np.array_equal(expected_dataset,actual_dataset)} - Expected: {array_to_string(expected_dataset)} - Actual: {array_to_string(actual_dataset)}")
         set_shared_memory_data(actual_dataset)
         # log_my_message("[PYTHON][RE-SHARE] Dimensions: "+str(actual_dataset.shape)+" - Type: "+str(actual_dataset.dtype)+" - Data: "+array_to_string(actual_dataset))
@@ -79,17 +95,17 @@ class Utilities1(unittest.TestCase):
         # all supported types
         
 
-        counter=get_counter()
-        offset = counter%number_of_software
+        counter = get_counter()
+        offset = counter % number_of_software
         # offset = counter-number_of_software
         
         print(f"offset : {offset}")
 
         # 4 = number connected of programs
         # as long as you can upload data - keep running
-        while counter <= (36 * number_of_software) +1:
+        while counter <= (36 * number_of_software) + 1:
             if (counter - offset) % number_of_software == 0:
-                index=int((counter - offset)/number_of_software)-1
+                index = int((counter - offset) / number_of_software) - 1
                 with self.subTest(i=index):
                     if offset != 0:
                         self.reshare(index)
@@ -97,9 +113,12 @@ class Utilities1(unittest.TestCase):
                         if index > 0 and index <= len(self.datasets):
                             set_shared_memory_path(data_path)
                             actual_dataset = get_shared_memory_data()
-                            expected_dataset=self.datasets[index-1]
+                            expected_dataset = self.datasets[index-1]
                             # log_my_message(f"[PYTHON][CHECK] - {np.array_equal(expected_dataset,actual_dataset)} - Expected: {array_to_string(expected_dataset)} - Actual: {array_to_string(actual_dataset)}")
-                            self.assertTrue(np.array_equal(expected_dataset,actual_dataset))                        
+                            self.assertTrue(np.array_equal(expected_dataset,actual_dataset))
+
+                            # Type equality
+                            self.assertEqual(expected_dataset.dtype,actual_dataset.dtype)
                         if index < len(self.datasets):
                             share_data(self.datasets[index])
                     

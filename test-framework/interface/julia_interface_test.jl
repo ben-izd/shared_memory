@@ -1,6 +1,20 @@
+"""
+This script is written to test the interface of SharedMemory library written for Julia
+
+Author: Benyamin Izadpanah
+Copyright: Benyamin Izadpanah
+Github Repository: https://github.com/ben-izd/shared_memory
+Start Date: 2022-8
+Last date modified: 2022-11
+Version used for testing: Julia 1.8.3
+
+Requirement:
+    - Make sure run this file in ".\\test-framework\\interface" directory (depends on @__DIR__)
+"""
+
 using Random
 using Test
-using Distributions
+
 include(joinpath(@__DIR__,"..","..","julia","shared_memory.jl"))
 using .shared_memory
 
@@ -40,13 +54,23 @@ set_shared_memory_path(file_path)
         generate_case(type, (3,5,7))
     end
 
+    # Testing String
+    sample_text = "Julia 😍 julia 😉 Julia 😁";
+    set_shared_memory_data(sample_text)
+    @test get_shared_memory_data_type()     == String
+    @test get_shared_memory_rank()          == 1
+    @test get_shared_memory_dimensions()    == [32]
+    @test get_shared_memory_flatten_length()== 32
+    @test get_shared_memory_data()          == sample_text
 end
 
 
 @testset "Random-Size" begin
     function generate_case(type::DataType,rank)
-        size = convert(Vector{Int64},floor.(rand(Uniform(5,10),rank)))
         
+        # size = convert(Vector{Int64},floor.(rand(Uniform(5,10),rank)))
+        size = Int64.(trunc.(rand(rank) * 5)) .+ 5
+
         data = rand(type, Tuple(size))
         set_shared_memory_data(data)
 

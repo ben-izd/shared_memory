@@ -1,3 +1,18 @@
+"""
+This script is written to test the interface of SharedMemory library written for Python
+
+Author: Benyamin Izadpanah
+Copyright: Benyamin Izadpanah
+Github Repository: https://github.com/ben-izd/shared_memory
+Start Date: 2022-8
+Last date modified: 2022-11
+Version used for testing: Python 3.11
+
+Requirement:
+    - numpy module
+    - Make sure this file is executed alone in ".\\test-framework\\interface" directory (depend on __file__ and __name__ == '__main__')
+"""
+
 import numpy as np
 import unittest
 from os.path import exists
@@ -48,6 +63,20 @@ class fixed_size(unittest.TestCase):
         temp = get_shared_memory_data()
         np.testing.assert_array_equal(temp, data)
         self.assertEqual(temp.dtype, data.dtype)
+
+        # Testing string
+        sample_text = "Python 😍 Numpy 😉 python 😁"
+        set_shared_memory_data(sample_text)
+        self.assertEqual(get_shared_memory_data_type(), str)
+        self.assertEqual(get_shared_memory_rank(), 1)
+        self.assertEqual(get_shared_memory_flatten_length(), 34)
+        np.testing.assert_array_equal(get_shared_memory_dimensions(), [34])
+        temp = get_shared_memory_data()
+        np.testing.assert_array_equal(temp, sample_text)
+        
+
+
+
 
     def test_sharing_data(self):
 

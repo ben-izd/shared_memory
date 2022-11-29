@@ -1,6 +1,11 @@
 function out = get_shared_memory_data_type()
-    load_shared_memory_library()
+% get_shared_memory_data_type() return the shared memory data type as char
+% For complex-64 and complex-128, 'csingle' and 'cdoulble' will be returned.
+
+    load_shared_memory_library();
+    
     out = check_library_error(calllib('shared_memory','get_shared_memory_data_type'));
+
     switch out
         case 0
             out = 'uint8';
