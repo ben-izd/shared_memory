@@ -3,7 +3,7 @@
 ![Image poster shows multiple languages are connected using shared memory](https://user-images.githubusercontent.com/56647066/204623755-ad350362-d6db-4687-9b71-c0233efe08b6.jpg)
 
 
-Easily and efficiently share rectangular (any dimension, any type) or String between [Python](https://python.org), [Julia](https://julialang.org), [Matlab](https://mathworks.com) - [Wolfram Language (Mathematica)](https://www.wolfram.com/mathematica/), [Java](https://www.java.com/) using shared memory. Each language somehow implements sharing data either for its sub-kernel or the same processes but now you can share between them at a super fast speed. It's backed by a library written in [Rust](https://rust-lang.org/).
+Easily and efficiently share rectangular array (any dimension, any type) or String between [Python](https://python.org), [Julia](https://julialang.org), [Matlab](https://mathworks.com) - [Wolfram Language (Mathematica)](https://www.wolfram.com/mathematica/), [Java](https://www.java.com/) through memory. Each language somehow implements sharing data either for its sub-kernel or the same processes but now you can share between them at a super fast speed. It's backed by a library written in [Rust](https://rust-lang.org/).
 
 To make your life and mine easier, all the function names are the same (snake_case) except Mathematica which does not support underline and is PascalCase and Java which is a convention to be camelCase. All of them have simple logic `action_shared_memory[_property]`, like `get_shared_memory_flatten_length` in Julia, Python and Matlab which is `GetSharedMemoryFlattenLength` in Mathematica and all have the same functionality. (Due to Java's strict type syntax, some intermediate methods was introduced)
 
