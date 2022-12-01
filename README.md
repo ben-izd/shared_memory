@@ -8,7 +8,9 @@ Easily and efficiently share rectangular (any dimension, any type) or String bet
 To make your life and mine easier, all the function names are the same (snake_case) except Mathematica which does not support underline and is PascalCase and Java which is a convention to be camelCase. All of them have simple logic `action_shared_memory[_property]`, like `get_shared_memory_flatten_length` in Julia, Python and Matlab which is `GetSharedMemoryFlattenLength` in Mathematica and all have the same functionality. (Due to Java's strict type syntax, some intermediate methods was introduced)
 
 ## Simple Example
-Let's suppose you have a matrix in julia and you would like to apply [`Numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) function on it then use Matlab [`mpower`](https://uk.mathworks.com/help/matlab/ref/mpower.html), then in Mathematica use [`Minors`](https://reference.wolfram.com/language/ref/Minors.html) and share that result with Java, how would you do it? Saving in a file? use socket? Here is the steps with this library.
+Let's suppose you have a matrix in julia and you would like to apply [`Numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) function on it then use Matlab [`mpower`](https://uk.mathworks.com/help/matlab/ref/mpower.html), then in Mathematica use [`Minors`](https://reference.wolfram.com/language/ref/Minors.html) and share that result with Java, how would you do it? Saving in a file? use socket?
+
+If we ignore the Java, just reading and writing a 1000x1000 double matrix to disk on my system took around __8 seconds__ while using the shared memory it's __under 1 second (0.26)__. It not only helps you to share data, it can share it super fast, far suprior than disk or socket. Here is the steps for a small matrix with this library:
 
 First, we assume, you've downloaded the repository in your `C:\download` directory.
 
